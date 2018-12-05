@@ -32,6 +32,8 @@ func volumeOffset(flag int8) int8 {
 }
 
 func volumeControl(context *gin.Context) {
+	updateCurrentVolume()
+
 	var stdOut string
 	var errorMessage error
 
@@ -43,6 +45,8 @@ func volumeControl(context *gin.Context) {
 	case "down":
 		volume += volumeOffset(-5)
 		break
+	default:
+		return
 	}
 
 	switch runtime.GOOS {
@@ -59,7 +63,7 @@ func volumeControl(context *gin.Context) {
 	})
 }
 
-func main() {
+func updateCurrentVolume() {
 	stdOut, errorGetCurrentVolume := runCommand("osascript", "-e", "set ovol to output volume of (get volume settings)")
 	if errorGetCurrentVolume != nil {
 		log.Fatalln(errorGetCurrentVolume)
@@ -70,8 +74,18 @@ func main() {
 		log.Fatalln(errorConvertCurrentVolumeToInt)
 	}
 	volume = int8(currentVolume)
+}
 
-	server := gin.Default()
-	server.GET("volume/:control", volumeControl)
-	server.Run(":44110")
+func main() {
+	updateCurrentVolume()
+	route := gin.Default()
+	route.GET("volume/:control", volumeControl)
+	route.LoadHTMLGlob("*.tmpl")
+	route.GET("volume", func(context *gin.Context) {
+		updateCurrentVolume()
+		context.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"current_volume": volume,
+		})
+	})
+	route.Run(":44110")
 }
