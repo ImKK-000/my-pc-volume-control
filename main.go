@@ -3,9 +3,12 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"net/http"
 	"os/exec"
 	"runtime"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,8 +19,8 @@ func runCommand(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	var buffer bytes.Buffer
 	cmd.Stdout = &buffer
-	err := cmd.Run()
-	return buffer.String(), err
+	errorRunCommand := cmd.Run()
+	return buffer.String(), errorRunCommand
 }
 
 func volumeOffset(flag int8) int8 {
@@ -56,7 +59,16 @@ func volumeControl(context *gin.Context) {
 }
 
 func main() {
-	runCommand("osascript", "-e", fmt.Sprintf("set volume output volume %d", volume))
+	stdOut, errorGetCurrentVolume := runCommand("osascript", "-e", "set ovol to output volume of (get volume settings)")
+	if errorGetCurrentVolume != nil {
+		log.Fatalln(errorGetCurrentVolume)
+	}
+	currentVolumeTrim := strings.TrimSpace(stdOut)
+	currentVolume, errorConvertCurrentVolumeToInt := strconv.Atoi(currentVolumeTrim)
+	if errorConvertCurrentVolumeToInt != nil {
+		log.Fatalln(errorConvertCurrentVolumeToInt)
+	}
+	volume = int8(currentVolume)
 
 	server := gin.Default()
 	server.GET("volume/:control", volumeControl)
