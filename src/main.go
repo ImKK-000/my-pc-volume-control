@@ -62,7 +62,8 @@ func volumeControl(context *gin.Context) {
 		stdOut, errorMessage = runCommand("osascript", "-e", fmt.Sprintf("set volume output volume %d", volume))
 		break
 	case "linux":
-		stdOut, errorMessage = runCommand("pactl", "--", "set-sink-volume", "0", fmt.Sprintf("%d%%", volume))
+		stdOut, errorMessage = runCommand("pactl", "-- set-sink-volume 0", fmt.Sprintf("%d%%", volume))
+		break
 	}
 
 	context.JSON(http.StatusOK, gin.H{
@@ -72,7 +73,18 @@ func volumeControl(context *gin.Context) {
 }
 
 func updateCurrentVolume() {
-	stdOut, errorGetCurrentVolume := runCommand("osascript", "-e", "set ovol to output volume of (get volume settings)")
+	var stdOut string
+	var errorGetCurrentVolume error
+
+	switch runtime.GOOS {
+	case "darwin":
+		stdOut, errorGetCurrentVolume = runCommand("osascript", "-e set ovol to output volume of (get volume settings)")
+		break
+	case "linux":
+		stdOut, errorGetCurrentVolume = runCommand("awk", `-F"[][]" '/dB/ { print $2 }' <(amixer sget Master) `)
+		break
+	}
+
 	if errorGetCurrentVolume != nil {
 		log.Fatalln(errorGetCurrentVolume)
 	}
