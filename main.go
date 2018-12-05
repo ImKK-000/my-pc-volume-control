@@ -46,7 +46,15 @@ func volumeControl(context *gin.Context) {
 		volume += volumeOffset(-5)
 		break
 	default:
-		return
+		volumeFromParam, errorConvertVolumeFromParam := strconv.Atoi(control)
+		if errorConvertVolumeFromParam != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{
+				"stdout": stdOut,
+				"error":  errorMessage,
+			})
+			return
+		}
+		volume = int8(volumeFromParam)
 	}
 
 	switch runtime.GOOS {

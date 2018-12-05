@@ -58,6 +58,12 @@
     slider.oninput = function () {
       output.innerHTML = this.value;
     }
+
+    slider.addEventListener("change", function () {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("GET", location.origin + "/volume/" + this.value, true);
+      xhttp.send();
+    }, false)
   </script>
 </body>
 
