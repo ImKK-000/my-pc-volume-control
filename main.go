@@ -24,7 +24,8 @@ func runCommand(name string, args ...string) (string, error) {
 }
 
 func volumeOffset(flag int8) int8 {
-	if volume+flag < 0 || volume+flag > 100 {
+	volumeChange := volume + flag
+	if volumeChange < 0 || volumeChange > 100 {
 		return 0
 	}
 	return flag
